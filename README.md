@@ -14,4 +14,4 @@ kubectl create secret generic arc-secrets \
     NAMESPACE="gha-maven-runner"
     GITHUB_CONFIG_URL="https://github.com/deivid-andrade"
     GITHUB_PAT=""
-    helm install "${INSTALLATION_NAME}" -f  values.yaml --namespace "${NAMESPACE}" --create-namespace .
+    helm upgrade --install "${INSTALLATION_NAME}" -f  values.yaml --namespace "${NAMESPACE}" --create-namespace .
