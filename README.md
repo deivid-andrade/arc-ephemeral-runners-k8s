@@ -10,6 +10,6 @@ kubectl create secret generic arc-secrets \
   --from-file=github_app_private_key=path-to-key
 
 
- INSTALLATION_NAME="maven-runner"
+INSTALLATION_NAME="maven-runner"
     NAMESPACE="gha-maven-runner"
-    helm upgrade --install "${INSTALLATION_NAME}" -f  values.yaml --namespace "${NAMESPACE}" --create-namespace .
+    helm upgrade --install "${INSTALLATION_NAME}" -f  ../templates/maven-runner.yml --namespace "${NAMESPACE}" --create-namespace .
