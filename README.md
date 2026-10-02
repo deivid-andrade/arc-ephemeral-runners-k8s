@@ -1,5 +1,7 @@
 # GitHub Actions Runner Controller (ARC)
 
+![Visão geral dos runners efêmeros do GitHub Actions no Kubernetes](6a6a05b6-c630-41f2-8200-b4c2eb389f9b.png)
+
 Este repositório instala um runner scale set chamado `maven-runner` para a organização `deivid-labs`. O controller e o scale set são instalações Helm separadas: o controller fica em `arc-systems`, e os pods do scale set ficam em `gha-maven-runner`.
 
 ## Visão geral
