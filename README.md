@@ -142,3 +142,13 @@ kubectl get autoscalingrunnersets -A
 kubectl get pods -n gha-maven-runner
 kubectl get pods -n arc-systems
 ```
+
+## Deploy pelo GitHub Actions
+
+Há dois workflows manuais, separados para permitir atualizar cada instalação de forma independente. Execute **Deploy ARC Controller** primeiro para instalar ou atualizar o controller; depois execute **Deploy Runner Scale Set** para instalar ou atualizar `maven-runner`. O segundo workflow valida que o CRD do controller e o Secret Kubernetes `arc-secrets` já existem.
+
+O workflow **Deploy Runner Scale Set** permite escolher `max_runners` (padrão `4`, mínimo `1`); `minRunners` permanece `0` para permitir scale-to-zero.
+
+Antes de executar, adicione o secret `KUBECONFIG` em **Settings → Secrets and variables → Actions**. O valor deve ser o conteúdo completo do kubeconfig do cluster de destino. A identidade desse kubeconfig precisa ter permissões para instalar os recursos do controller e do scale set, incluindo CRDs e recursos RBAC.
+
+O secret Kubernetes `arc-secrets` descrito acima continua sendo pré-requisito e deve existir em `gha-maven-runner` antes do deploy do scale set. O workflow não lê nem envia a chave do GitHub App; ela permanece no Secret do Kubernetes.

@@ -1,0 +1,78 @@
+name: Deploy Runner Scale Set
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_runners:
+        description: Maximum number of runners allowed in the scale set
+        required: true
+        type: number
+        default: 4
+
+permissions:
+  contents: read
+
+concurrency:
+  group: arc-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy Maven runner scale set
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      MAX_RUNNERS: ${{ inputs.max_runners }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Validate scale set settings
+        shell: bash
+        run: |
+          if ! [[ "$MAX_RUNNERS" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::max_runners must be a positive integer."
+            exit 1
+          fi
+          helm lint ./gha-runner-scale-set \
+            --values templates/maven-runner.yml \
+            --set "maxRunners=${MAX_RUNNERS}" \
+            --set minRunners=0
+
+      - name: Configure Kubernetes access
+        env:
+          KUBECONFIG_CONTENT: ${{ secrets.KUBECONFIG }}
+        shell: bash
+        run: |
+          if [[ -z "$KUBECONFIG_CONTENT" ]]; then
+            echo "::error::Add the KUBECONFIG Actions secret before running this workflow."
+            exit 1
+          fi
+          umask 077
+          printf '%s\n' "$KUBECONFIG_CONTENT" > "$RUNNER_TEMP/arc-kubeconfig"
+          echo "KUBECONFIG=$RUNNER_TEMP/arc-kubeconfig" >> "$GITHUB_ENV"
+
+      - name: Verify controller and GitHub credentials
+        run: |
+          kubectl wait \
+            --for=condition=Established \
+            crd/autoscalingrunnersets.actions.github.com \
+            --timeout=60s
+          kubectl get secret arc-secrets --namespace gha-maven-runner
+
+      - name: Deploy Maven runner scale set
+        run: |
+          helm upgrade --install maven-runner ./gha-runner-scale-set \
+            --values templates/maven-runner.yml \
+            --namespace gha-maven-runner \
+            --create-namespace \
+            --set "maxRunners=${MAX_RUNNERS}" \
+            --set minRunners=0 \
+            --wait \
+            --timeout 10m

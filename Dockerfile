@@ -13,8 +13,10 @@ ARG RUNNER_CONTAINER_HOOKS_VERSION="0.3.1"
 ENV DEBIAN_FRONTEND=noninteractive
 ENV RUNNER_MANUALLY_TRAP_SIG=1
 ENV ACTIONS_RUNNER_PRINT_LOG_TO_STDOUT=1
+ENV JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
 
-RUN apt update -y && apt install curl unzip -y --fix-missing
+RUN apt update -y && apt install curl unzip openjdk-17-jdk-headless maven -y --fix-missing
 
 RUN adduser --disabled-password --gecos "" --uid 1001 runner \
     && groupadd docker --gid 123 \

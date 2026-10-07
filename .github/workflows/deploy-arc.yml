@@ -1,0 +1,46 @@
+name: Deploy ARC Controller
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: arc-deployment
+  cancel-in-progress: false
+
+env:
+  ARC_CHART_VERSION: "0.13.1"
+
+jobs:
+  deploy:
+    name: Deploy controller
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Configure Kubernetes access
+        env:
+          KUBECONFIG_CONTENT: ${{ secrets.KUBECONFIG }}
+        shell: bash
+        run: |
+          if [[ -z "$KUBECONFIG_CONTENT" ]]; then
+            echo "::error::Add the KUBECONFIG Actions secret before running this workflow."
+            exit 1
+          fi
+          umask 077
+          printf '%s\n' "$KUBECONFIG_CONTENT" > "$RUNNER_TEMP/arc-kubeconfig"
+          echo "KUBECONFIG=$RUNNER_TEMP/arc-kubeconfig" >> "$GITHUB_ENV"
+
+      - name: Deploy ARC controller
+        run: |
+          helm upgrade --install arc-controller \
+            oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set-controller \
+            --version "$ARC_CHART_VERSION" \
+            --namespace arc-systems \
+            --create-namespace \
+            --wait \
+            --timeout 10m
